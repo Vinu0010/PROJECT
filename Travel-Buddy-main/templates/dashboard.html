@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h2>Dashboard</h2>
+    <p>Welcome, {{ current_user.username }}!</p>
+    <h3>Your Achievements:</h3>
+    <ul>
+        {% for place, visited in achievements.items() %}
+            <li>{{ place }}: {{ visited }}</li>
+        {% endfor %}
+    </ul>
+    <a href="{{ url_for('map') }}">View Map</a>
+    <a href="{{ url_for('map') }}">Export Achievements</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kerala Food and Tourist Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> <!-- Bootstrap CSS -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 20px;
+        }
+        #map {
+            height: 600px;
+            width: 100%;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 15px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .notification {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #d9534f;
+        }
+        #video {
+            display: none; /* Hide the video element initially */
+            width: 100%;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .status-message {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        .avatar-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .username {
+            margin-left: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="user-info">
+            {% if current_user.is_authenticated %}
+                <div class="avatar-button">{{ current_user.username[0] }}</div> <!-- Display first letter of username as avatar -->
+                <span class="username">{{ current_user.username }}</span> <!-- Display username -->
+            {% endif %}
+        </div>
+        <h1>Famous Food Spots and Tourist Destinations in Kerala</h1>
+        <div class="description">
+            <p>Explore the culinary delights and beautiful tourist spots of Kerala!</p>
+        </div>
+
+        <!-- Notification area -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="notification">
+                <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}" style="font-weight: bold; color: red;">{{ message }}</li>
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- Navigation buttons -->
+        <div style="text-align: center;">
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('logout') }}" class="button">Logout</a>
+                <a href="{{ url_for('dashboard') }}" class="button">Dashboard</a>
+                <a href="{{ url_for('export') }}" class="button">Export Achievements</a>
+                <a href="{{ url_for('achievements') }}" class="button">View Achievements</a>
+                <a href="{{ url_for('leaderboard') }}" class="button">Leaderboard</a>
+            {% else %}
+                <a href="{{ url_for('login') }}" class="button">Login</a>
+            {% endif %}
+        </div>
+
+        <div id="map">{{ map|safe }}</div> <!-- This is where the map will be displayed -->
+
+        <h2>Check-in</h2>
+        <form id="checkinForm" method="POST" enctype="multipart/form-data">
+            <label for="place">Select a place to check in:</label>
+            <select name="place" id="place" required class="form-control">
+                <option value="Munnar" data-lat="10.0889" data-lng="77.0592">Munnar</option>
+                <option value="Alleppey" data-lat="9.5981" data-lng="76.3401">Alleppey</option>
+                <option value="Wayanad" data-lat="11.6349" data-lng="75.8020">Wayanad</option>
+                <option value="Kochi" data-lat="9.9312" data-lng="76.2673">Kochi</option>
+                <option value="Trivandrum" data-lat="8.5241" data-lng="76.9366">Trivandrum</option>
+                <option value="Kumarakom" data-lat="9.5981" data-lng="76.4334">Kumarakom</option>
+                <option value="My Home" data-lat="10.1541" data-lng="76.3147">My Home - This is my home. Coordinates: 10°09'14.8"N 76°18'52.8"E</option>
+            </select>
+            <br>
+            <video id="video" autoplay></video> <!-- Video element for the camera -->
+            <button type="button" id="openCamera" class="btn btn-primary">Open Camera</button>
+            <br>
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+            <button type="button" id="checkInButton" class="btn btn-success">Check In</button>
+        </form>
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const openCameraButton = document.getElementById('openCamera');
+        const checkInButton = document.getElementById('checkInButton');
+        const statusMessage = document.getElementById('statusMessage');
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        openCameraButton.addEventListener('click', async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            video.style.display = 'block'; // Show the video element
+
+            // Get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                }, (error) => {
+                    alert('Unable to retrieve your location. Please try again.');
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        });
+
+        checkInButton.addEventListener('click', () => {
+            const selectedPlace = document.getElementById('place');
+            const selectedOption = selectedPlace.options[selectedPlace.selectedIndex];
+            const destinationLat = parseFloat(selectedOption.getAttribute('data-lat'));
+            const destinationLng = parseFloat(selectedOption.getAttribute('data-lng'));
+            const userLat = parseFloat(document.getElementById('latitude').value);
+            const userLng = parseFloat(document.getElementById('longitude').value);
+
+            // Check if the user's location is within a certain distance of the destination
+            const distance = getDistanceFromLatLonInKm(userLat, userLng, destinationLat, destinationLng);
+            const threshold = 15; // 15 kilometers
+
+            if (distance <= threshold) {
+                statusMessage.textContent = 'Check-in successful! You are at ' + selectedOption.value + '.';
+                statusMessage.style.color = 'green';
+                addTravelPoints(20); // Add 20 travel points
+            } else {
+                statusMessage.textContent = 'Check-in failed! You are ' + distance.toFixed(2) + ' km away from ' + selectedOption.value + '.';
+                statusMessage.style.color = 'red';
+            }
+        });
+
+        function addTravelPoints(points) {
+            // Send a request to the server to add travel points
+            fetch('/add_travel_points', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ points: points }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Travel points added successfully:', data);
+                } else {
+                    console.error('Error adding travel points:', data);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2); 
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            const distance = R * c; // Distance in km
+            return distance;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+    </script>
+</body>
+</html>
