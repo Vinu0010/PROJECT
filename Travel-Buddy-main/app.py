@@ -241,35 +241,51 @@ def export():
 
 @app.route('/add_travel_points', methods=['POST'])
 def add_travel_points():
-    # Check if the user is authenticated
     if 'user_id' not in session:
+        print("User not authenticated.")  # Debugging line
         return jsonify({'success': False, 'message': 'User not authenticated'}), 401
 
-    # Get the data from the request
     data = request.get_json()
-    points = data.get('points')
-    place = data.get('place')
+    points_to_add = 20  # Fixed points to add
+    print(f"Adding {points_to_add} points for user ID {session['user_id']}")  # Debugging line
 
-    # Update the user's travel points in the database
-    success = update_user_points(session['user_id'], points)
+    success = update_user_points(session['user_id'], points_to_add)
 
     if success:
-        # Add the visited place to the user's record
-        add_visited_place(session['user_id'], place)
+        print(f"Successfully updated travel points for user ID {session['user_id']}.")  # Debugging line
         return jsonify({'success': True, 'message': 'Travel points updated successfully.'})
     else:
+        print("Failed to update travel points.")  # Debugging line
         return jsonify({'success': False, 'message': 'Failed to update travel points.'}), 500
+
+@app.route('/get_travel_points', methods=['GET'])
+def get_travel_points():
+    if 'user_id' not in session:
+        print("User not authenticated.")  # Debugging line
+        return jsonify({'success': False, 'message': 'User not authenticated'}), 401
+
+    user = User.query.filter_by(id=session['user_id']).first()
+    if user:
+        print(f"User ID {user.id} has {user.travel_points} travel points.")  # Debugging line
+        return jsonify({'success': True, 'points': user.travel_points})
+    else:
+        print("User not found.")  # Debugging line
+        return jsonify({'success': False, 'message': 'User not found.'}), 404
 
 def update_user_points(user_id, points):
     try:
         user = User.query.filter_by(id=user_id).first()
         if user:
-            user.travel_points += points
-            db.session.commit()
+            print(f"Current travel points for user {user.username}: {user.travel_points}")  # Debugging line
+            user.travel_points += points  # Add the points to the user's current travel points
+            db.session.commit()  # Commit the changes to the database
+            print(f"Updated travel points for user {user.username}: {user.travel_points}")  # Debugging line
             return True
+        else:
+            print(f"User with ID {user_id} not found.")  # Debugging line
     except Exception as e:
-        db.session.rollback()
-        print(f"Error updating points: {e}")
+        db.session.rollback()  # Rollback in case of error
+        print(f"Error updating points: {e}")  # Debugging line
     return False
 
 def add_visited_place(user_id, place):
