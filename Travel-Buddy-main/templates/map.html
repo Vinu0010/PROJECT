@@ -65,38 +65,10 @@
             margin-top: 20px;
             font-weight: bold;
         }
-        .user-info {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            margin-bottom: 20px;
-        }
-        .avatar-button {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #007bff;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-        .username {
-            margin-left: 10px;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="user-info">
-            {% if current_user.is_authenticated %}
-                <div class="avatar-button">{{ current_user.username[0] }}</div> <!-- Display first letter of username as avatar -->
-                <span class="username">{{ current_user.username }}</span> <!-- Display username -->
-            {% endif %}
-        </div>
         <h1>Famous Food Spots and Tourist Destinations in Kerala</h1>
         <div class="description">
             <p>Explore the culinary delights and beautiful tourist spots of Kerala!</p>
@@ -151,6 +123,7 @@
             <button type="button" id="checkInButton" class="btn btn-success">Check In</button>
         </form>
         <div class="status-message" id="statusMessage"></div>
+        <div class="travel-points" id="travelPoints">Travel Points: 0</div> <!-- Display travel points here -->
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -195,28 +168,50 @@
             if (distance <= threshold) {
                 statusMessage.textContent = 'Check-in successful! You are at ' + selectedOption.value + '.';
                 statusMessage.style.color = 'green';
-                addTravelPoints(20); // Add 20 travel points
+                addTravelPoints(20, selectedOption.value); // Add 20 travel points and the place visited
             } else {
                 statusMessage.textContent = 'Check-in failed! You are ' + distance.toFixed(2) + ' km away from ' + selectedOption.value + '.';
                 statusMessage.style.color = 'red';
             }
         });
 
-        function addTravelPoints(points) {
-            // Send a request to the server to add travel points
+        function addTravelPoints(points, placeVisited) {
             fetch('/add_travel_points', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ points: points }),
+                body: JSON.stringify({ points: points, place: placeVisited }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data); // Log the response to see if it was successful
+                if (data.success) {
+                    console.log('Travel points and visited place added successfully');
+                    // Fetch updated travel points
+                    fetchTravelPoints();
+                } else {
+                    console.error('Error adding travel points:', data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function fetchTravelPoints() {
+            fetch('/get_travel_points', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Travel points added successfully:', data);
+                    document.getElementById('travelPoints').textContent = 'Travel Points: ' + data.points;
                 } else {
-                    console.error('Error adding travel points:', data);
+                    console.error('Error fetching travel points:', data.message);
                 }
             })
             .catch((error) => {
