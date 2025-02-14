@@ -203,8 +203,14 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    achievements = json.loads(current_user.achievements)  # Convert string back to dictionary
-    return render_template('dashboard.html', achievements=achievements, travel_points=current_user.travel_points)
+    # Check if achievements is None and handle it
+    achievements_data = current_user.achievements
+    if achievements_data is None:
+        achievements = {}  # Initialize as an empty dictionary if None
+    else:
+        achievements = json.loads(achievements_data)  # Convert string back to dictionary
+
+    return render_template('dashboard.html', achievements=achievements)
 
 # Achievements route
 @app.route('/achievements')
@@ -292,6 +298,20 @@ def add_visited_place(user_id, place):
     # Logic to add the visited place to the user's record
     # You may need to create a VisitedPlace model if you haven't already
     pass  # Replace with actual database logic
+
+@app.route('/change_credentials', methods=['POST'])
+@login_required
+def change_credentials():
+    new_username = request.form['new_username']
+    new_password = request.form['new_password']
+    
+    # Logic to update the user's credentials in the database
+    current_user.username = new_username
+    current_user.set_password(new_password)  # Assuming you have a method to set the password
+    db.session.commit()  # Commit the changes to the database
+
+    flash('Credentials updated successfully!', 'success')
+    return redirect(url_for('dashboard'))  # Redirect back to the dashboard
 
 if __name__ == "__main__":
     app.run(debug=True)
