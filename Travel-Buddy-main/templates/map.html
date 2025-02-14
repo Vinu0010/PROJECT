@@ -92,8 +92,6 @@
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('logout') }}" class="button">Logout</a>
                 <a href="{{ url_for('dashboard') }}" class="button">Dashboard</a>
-                <a href="{{ url_for('export') }}" class="button">Export Achievements</a>
-                <a href="{{ url_for('achievements') }}" class="button">View Achievements</a>
                 <a href="{{ url_for('leaderboard') }}" class="button">Leaderboard</a>
             {% else %}
                 <a href="{{ url_for('login') }}" class="button">Login</a>
@@ -101,6 +99,14 @@
         </div>
 
         <div id="map">{{ map|safe }}</div> <!-- This is where the map will be displayed -->
+
+        <!-- Write Your Experience Text Box Section -->
+        <div class="form-group">
+            <label for="experienceInput">Write Your Experience:</label>
+            <textarea class="form-control" id="experienceInput" rows="5" placeholder="Share your travel experience..."></textarea>
+        </div>
+
+        <button id="submitExperienceButton" class="btn btn-primary">Submit Experience</button> <!-- Button to submit experience -->
 
         <h2>Check-in</h2>
         <form id="checkinForm" method="POST" enctype="multipart/form-data">
@@ -235,6 +241,14 @@
         function deg2rad(deg) {
             return deg * (Math.PI/180);
         }
+
+        // JavaScript to handle the submission of the experience can be added here
+        document.getElementById('submitExperienceButton').addEventListener('click', function() {
+            const experience = document.getElementById('experienceInput').value;
+            // Add functionality to handle the submitted experience
+            console.log('Experience submitted:', experience);
+            // Implement your submission logic here (e.g., send to server)
+        });
     </script>
 </body>
 </html>
