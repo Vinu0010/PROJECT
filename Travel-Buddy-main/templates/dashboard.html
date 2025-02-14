@@ -4,18 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script defer src="{{ url_for('static', filename='main.js') }}"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .avatar-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #f0f0f0; /* Placeholder color */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #555;
+            margin-right: 15px;
+        }
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .user-info h4 {
+            margin: 0;
+        }
+        .user-info p {
+            margin: 0;
+            color: #777;
+        }
+    </style>
 </head>
 <body>
-    <h2>Dashboard</h2>
-    <p>Welcome, {{ current_user.username }}!</p>
-    <h3>Your Achievements:</h3>
-    <ul>
-        {% for place, visited in achievements.items() %}
-            <li>{{ place }}: {{ visited }}</li>
-        {% endfor %}
-    </ul>
-    <a href="{{ url_for('map') }}">View Map</a>
-    <a href="{{ url_for('map') }}">Export Achievements</a>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <div class="container">
+        <h2>Dashboard</h2>
+        
+        <!-- Avatar Section -->
+        <div class="avatar-container">
+            <div class="avatar">
+                <!-- Placeholder for avatar image -->
+                <span>{{ current_user.username[0] }}</span> <!-- Display first letter of username -->
+            </div>
+            <div class="user-info">
+                <h4>{{ current_user.username }}</h4>
+                <p>Your travel points: {{ current_user.travel_points }}</p>
+            </div>
+        </div>
+
+        <h3>Your Achievements:</h3>
+        <ul>
+            {% for place, visited in achievements.items() %}
+                <li>{{ place }}: {{ visited }}</li>
+            {% endfor %}
+        </ul>
+        
+        <a href="{{ url_for('map') }}">View Map</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
+
